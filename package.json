@@ -1,5 +1,5 @@
 {
-  "name": "PersonalBlog-Backend",
+  "name": "personalblogbackend",
   "version": "1.0.0",
   "main": "index.js",
   "repository": "https://github.com/Litenoo/PersonalBlog-Backend.git",
@@ -8,9 +8,15 @@
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4",
+    "winston": "^3.17.0"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1"
+  },
+  "scripts": {
+    "test" : "vitest",
+    "dev" : "tsc && nodemon dist/index.js"
   }
 }
