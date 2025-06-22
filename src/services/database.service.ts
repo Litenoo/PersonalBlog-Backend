@@ -19,29 +19,105 @@ export default class DatabaseService {
 				},
 				select: params.withContent
 					? { id: true, title: true, content: true, published: true, createdAt: true, updatedAt: true }
-					: { id: true, title: true, published: true, createdAt: true, updatedAt: true },
+					: { id: true, title: true, content: false, published: true, createdAt: true, updatedAt: true },
 			});
 
 			if (!post) {
 				return { post: null, errorCode: "not_found" };
 			}
-			return { post, errorCode: undefined };
+			return { post };
 
 		} catch (error) {
 			logger.error(`Error fetching post with ID ${params.postId}:`, error);
-			return { errorCode: "critical_error" };
+			return { post: null, errorCode: "critical_error" };
 		}
 	}
 
 	async insertPost(
 		params: {
-			title: string,
-			content: string,
-			tags: string[], //if no tags exist decide what to do
-			published: boolean,
-		}): Promise<
-			void
-		> {
+			title: string, content: string, tags: string[], published: boolean,
+		}): Promise<{ post: Post | null, errorCode?: string }> {
+		try {
+			const { title, content, tags, published } = params;
 
+			const post = await this.prisma.post.create({
+				data: {
+					title,
+					content,
+					published,
+					tags: {
+						connectOrCreate: tags.map((tag) => ({
+							where: { title: tag },
+							create: { title: tag },
+						})),
+					},
+				},
+				select: {
+					id: true,
+					title: true,
+					content: true,
+					tags: true,
+					published: true,
+					createdAt: true,
+					updatedAt: true,
+				},
+			});
+			return { post };
+		} catch (error) {
+			logger.error(`Error inserting post:`, error);
+			return { post: null, errorCode: "critical_error" };
+		}
+	}
+
+	async deletePost(params: { postId: number }): Promise<{ post?: Post | null; errorCode?: string }> {
+		try {
+			const post = await this.prisma.post.delete({
+				where: { id: params.postId },
+			});
+			if (!post) {
+				return { post: null, errorCode: "not_found" };
+			}
+			return { post };
+		} catch (error) {
+			logger.error(`Error deleting post with ID ${params.postId}:`, error);
+			return { post: null, errorCode: "critical_error" };
+		}
+	}
+
+	async editPost(
+		params: {
+			postId: number, title?: string, content?: string, tags?: string[], published?: boolean,
+		}): Promise<{ post?: Post | null; errorCode?: string }> {
+		try {
+			const { postId, title, content, tags, published } = params;
+
+			const post = await this.prisma.post.update({
+				where: { id: postId },
+				data: {
+					title,
+					content,
+					published,
+					tags: tags ? {
+						connectOrCreate: tags.map((tag) => ({
+							where: { title: tag },
+							create: { title: tag },
+						})),
+					} : undefined,
+				},
+				select: {
+					id: true,
+					title: true,
+					content: true,
+					tags: true,
+					published: true,
+					createdAt: true,
+					updatedAt: true,
+				},
+			});
+			return { post };
+		} catch (error) {
+			logger.error(`Error editing post with ID ${params.postId}:`, error);
+			return { post: null, errorCode: "critical_error" };
+		}
 	}
 };

@@ -26,6 +26,6 @@ model Post {
 
 model Tag {
   id Int @id @default(autoincrement())
-  title String
+  title String @unique
   posts Post[] @relation("PostTags")
 }
