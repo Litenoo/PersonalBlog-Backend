@@ -114,6 +114,10 @@ export default class DatabaseService {
 					updatedAt: true,
 				},
 			});
+			if (!post) {
+				return { post: null, errorCode: "not_found" };
+			}
+
 			return { post };
 		} catch (error) {
 			logger.error(`Error editing post with ID ${params.postId}:`, error);

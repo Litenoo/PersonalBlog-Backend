@@ -1,22 +1,27 @@
-import { describe, expect, test, vi, beforeEach, Mock } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import DbService from '../../src/services/database.service';
+import { PrismaClient } from '@prisma/client/extension';
 
-vi.mock('@prisma/client', () => ({
-	PrismaClient: vi.fn().mockImplementation(() => ({
-		post: {
-			create: vi.fn(),
-		},
-	})),
-}));
+/**
+ * This file contain unit tests for the database.service.ts file. 
+ * The test are designed to test the methods of that class exported by that file, 
+ * according that input data is already validated by the API layer.
+ */
 
-import { Prisma, PrismaClient } from "@prisma/client";
+const prismaMock = { // Define a mock for PrismaClient
+	post: {
+		findUnique: vi.fn(),
+		create: vi.fn(),
+		delete: vi.fn(),
+		update: vi.fn(),
+	}
+} as PrismaClient; // Create a mock instance of PrismaClient,
+//  to be able to pass it to database service as an argument
 
+const db = new DbService(prismaMock);
 
-describe(`getPostById`, async () => {
-	let db: DbService;
-	let prismaMock;
-
-	const postNoContent = {
+describe(`getPostById`, () => {
+	const postWithoutContent = {
 		id: 1,
 		title: 'Test Post',
 		tags: [
@@ -29,13 +34,8 @@ describe(`getPostById`, async () => {
 	}
 
 	const postWithContent = {
-		...postNoContent,
+		...postWithoutContent,
 		content: 'This is a test post content.',
-	}
-
-	const unpublishedPost = {
-		...postWithContent,
-		published: false,
 	}
 
 	beforeEach(() => {
@@ -43,17 +43,11 @@ describe(`getPostById`, async () => {
 	});
 
 	test(`Should return post`, async () => {
-		prismaMock = {
-			post: {
-				findUnique: vi.fn().mockResolvedValue(postWithContent),
-			}
-		} as any;
-		db = new DbService(prismaMock);
+		prismaMock.post.findUnique.mockResolvedValue(postWithContent); // Mock the Prisma findUnique method to return a post with content
+		const result = await db.getPostById({ postId: 1, withContent: true }); // Call the method with withContent set to true
 
-		const result = await db.getPostById({ postId: 1, withContent: true });
-
-		expect(result).toEqual({ post: postWithContent });
-		expect(prismaMock.post.findUnique).toHaveBeenCalledWith({
+		expect(result).toEqual({ post: postWithContent }); // Expect the result to match the post with content
+		expect(prismaMock.post.findUnique).toHaveBeenCalledWith({ // Check that findUnique was called with the correct parameters
 			where: { id: postWithContent.id, published: postWithContent.published },
 			select: {
 				content: true,
@@ -64,20 +58,13 @@ describe(`getPostById`, async () => {
 				updatedAt: true
 			},
 		});
-
 	});
 
-	test(`Should not include content when withContent equals false`, async () => {
-		prismaMock = {
-			post: {
-				findUnique: vi.fn().mockResolvedValue(postNoContent),
-			}
-		} as any;
-		db = new DbService(prismaMock);
-
+	test(`Shouldn't include content when withContent is false`, async () => {
+		prismaMock.post.findUnique.mockResolvedValue(postWithoutContent);
 		const result = await db.getPostById({ postId: 1, withContent: false });
 
-		expect(result).toEqual({ post: postNoContent });
+		expect(result).toEqual({ post: postWithoutContent });
 		expect(prismaMock.post.findUnique).toHaveBeenCalledWith({
 			where: { id: 1, published: true },
 			select: {
@@ -91,26 +78,17 @@ describe(`getPostById`, async () => {
 		});
 	});
 
-	test(`Shouldn't return post if it is not public`, async () => {
-		prismaMock = {
-			post: {
-				findUnique: vi.fn().mockResolvedValue(null),
-			}
-		} as any;
-		db = new DbService(prismaMock);
-
+	// It is okay to test that the post is not returned because it is not public or does not exist
+	// Because postgre will return null anyway, so second test would look exactly the same
+	test(`Shouldn't return post if it is not public or does not exist`, async () => {
+		prismaMock.post.findUnique.mockResolvedValue(null);
 		const result = await db.getPostById({ postId: 1, withContent: true });
-
 		expect(result).toEqual({ post: null, errorCode: "not_found" });
 	});
 });
 
 
-describe("insertPost", async () => {
-	// It is going to always return code message if post was inserted correctly
-	let prismaMock: any;
-	let db: DbService;
-
+describe("insertPost", () => {
 	const mockPost = {
 		id: 1,
 		title: "SomeTitle",
@@ -126,12 +104,7 @@ describe("insertPost", async () => {
 	});
 
 	test("Should insert post", async () => {
-		prismaMock = {
-			post: {
-				create: vi.fn().mockResolvedValue(mockPost),
-			}
-		} as any;
-		db = new DbService(prismaMock);
+		prismaMock.post.create.mockResolvedValue(mockPost);
 
 		const result = await db.insertPost({
 			title: mockPost.title,
@@ -147,7 +120,7 @@ describe("insertPost", async () => {
 				content: mockPost.content,
 				published: mockPost.published,
 				tags: {
-					connectOrCreate: mockPost.tags.map((tag) => ({
+					connectOrCreate: mockPost.tags.map((tag) => ({ // SQL relationship creation or join if exists
 						where: { title: tag },
 						create: { title: tag },
 					})),
@@ -167,9 +140,6 @@ describe("insertPost", async () => {
 });
 
 describe("deletePost", () => {
-	let db: DbService;
-	let prismaMock: any;
-
 	const mockPost = {
 		id: 1,
 		title: "SomeTitle",
@@ -185,12 +155,7 @@ describe("deletePost", () => {
 	});
 
 	test("Should delete post", async () => {
-		prismaMock = {
-			post: {
-				delete: vi.fn().mockResolvedValue(mockPost),
-			}
-		} as any;
-		db = new DbService(prismaMock);
+		prismaMock.post.delete.mockResolvedValue(mockPost);
 
 		const result = await db.deletePost({ postId: 1 });
 
@@ -200,13 +165,8 @@ describe("deletePost", () => {
 		});
 	});
 
-	test("Should return error if post not found", async () => {
-		prismaMock = {
-			post: {
-				delete: vi.fn().mockResolvedValue(null),
-			}
-		} as any;
-		db = new DbService(prismaMock);
+	test(`Should return null and errorCode "not_found" if post not found`, async () => {
+		prismaMock.post.delete.mockResolvedValue(null);
 
 		const result = await db.deletePost({ postId: 1 });
 
@@ -215,9 +175,6 @@ describe("deletePost", () => {
 });
 
 describe("updatePost", () => {
-	let db: DbService;
-	let prismaMock: any;
-
 	const mockPost = {
 		id: 1,
 		title: "Updated Title",
@@ -233,12 +190,7 @@ describe("updatePost", () => {
 	});
 
 	test("Should update post", async () => {
-		prismaMock = {
-			post: {
-				update: vi.fn().mockResolvedValue(mockPost),
-			}
-		} as any;
-		db = new DbService(prismaMock);
+		prismaMock.post.update.mockResolvedValue(mockPost);
 
 		const result = await db.editPost({
 			postId: 1,
@@ -273,4 +225,18 @@ describe("updatePost", () => {
 			}
 		});
 	});
-})
+
+	test("Should return null and errorCode 'not_found' if post not found", async () => {
+		prismaMock.post.update.mockResolvedValue(null);
+
+		const result = await db.editPost({
+			postId: 1,
+			title: mockPost.title,
+			content: mockPost.content,
+			tags: mockPost.tags,
+			published: mockPost.published,
+		});
+
+		expect(result).toEqual({ post: null, errorCode: "not_found" });
+	});
+});
