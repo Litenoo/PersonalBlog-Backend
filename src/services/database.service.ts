@@ -164,4 +164,74 @@ export default class DatabaseService {
 			return { tag: null, errorCode: "critical_error" };
 		}
 	}
+
+	/*search methods
+
+	//** This function is meant to search for : 
+		-Tag & Post via keyword
+		-Post via Tag
+
+		The concept is to make it able for user to enter keyword,
+		and allow to select tags, that may interest him
+	*/
+
+	async multiSearch(params: { keyword?: string, tagId?: number })
+		: Promise<{
+			searchResult: { posts: Post[], tags: Tag[] } | null, errorCode?: string
+		}> {
+		try {
+			let posts: Post[] = [];
+			let tags: Tag[] = [];
+
+			if (params.keyword) {
+				const [tagsByKeyword, postsByKeyword] = await Promise.all([
+					await this.prisma.tag.findMany({
+						where: {
+							title: {
+								contains: params.keyword,
+								mode: "insensitive",
+							},
+						},
+					}),
+					await this.prisma.post.findMany({
+						where: {
+							title: {
+								contains: params.keyword,
+								mode: "insensitive",
+							},
+							published: true,
+						},
+					})
+				]);
+				tags = tagsByKeyword;
+				posts.push(...postsByKeyword);
+			}
+
+			if (params.tagId) {
+				const postByTag = await this.prisma.post.findMany({
+					where: {
+						tags: {
+							some: {
+								id: params.tagId,
+							},
+						},
+						published: true,
+					},
+				});
+				posts.push(...postByTag);
+			}
+
+
+			return {
+				searchResult: { posts, tags }
+			}
+		} catch (err) {
+			logger.error(
+				`Error using multiSearch for ${params.keyword} keyword and ${params.tagId} tagId :`, err
+			);
+			return { searchResult: null, errorCode: "critical_error" };
+		}
+	}
 }
+
+//Add a functionality that excludes the doubles in multiSearch
