@@ -7,6 +7,8 @@ export default class DatabaseService {
 		this.prisma = prisma;
 	}
 
+	// Post methods
+
 	async getPostById(params: { postId: number; withContent: boolean }): Promise<
 		{ post?: Post | null; errorCode?: string } |
 		{ post?: Omit<Post, "content"> | null; errorCode?: string }
@@ -124,4 +126,42 @@ export default class DatabaseService {
 			return { post: null, errorCode: "critical_error" };
 		}
 	}
-};
+
+	// Tag methods
+
+	async insertTag(params: { title: string }): Promise<{ tag?: Tag | null; errorCode?: string }> {
+		try {
+			const tag = await this.prisma.tag.create({
+				data: {
+					title: params.title,
+				},
+				select: {
+					id: true,
+					title: true,
+				}
+			})
+			return { tag };
+		} catch (err) {
+			logger.error(`Error inserting tag with title ${params.title}:`, err);
+			return { tag: null, errorCode: "critical_error" };
+		}
+	}
+
+	async deleteTag(params: { tagId: number }): Promise<{ tag?: Tag | null, errorCode?: string }> {
+		try {
+			const tag = await this.prisma.tag.delete({
+				where: {
+					id: params.tagId,
+				},
+				select: {
+					id: true,
+					title: true,
+				}
+			});
+			return { tag };
+		} catch (err) {
+			logger.error(`Error deleting tag with ID ${params.tagId}:`, err);
+			return { tag: null, errorCode: "critical_error" };
+		}
+	}
+}
