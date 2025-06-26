@@ -14,7 +14,7 @@ const db = new DbService(prismaMock);
 
 describe(`insertTag`, async () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        vi.resetAllMocks();
     });
 
     test(`Should insert a tag`, async () => {

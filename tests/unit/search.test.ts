@@ -15,7 +15,7 @@ const db = new DbService(prismaMock);
 
 describe("multiSearch", () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        vi.resetAllMocks();
     });
 
     test("multiSearch via keyword", async () => {
@@ -24,7 +24,7 @@ describe("multiSearch", () => {
             title: "Post about Typescript",
             tags: [
                 { id: 1, title: "tag1" },
-                { id: 2, title: "someTag" }
+                { id: 2, title: "someTag" },
             ],
             published: true,
             createdAt: new Date(),
@@ -67,9 +67,9 @@ describe("multiSearch", () => {
                 }
             }
         });
-
         expect(result).toEqual(expectedResult);
     });
+
     test("multiSearch via tag", async () => {
         const expectedResult = {
             searchResult: {
@@ -78,7 +78,7 @@ describe("multiSearch", () => {
                     title: "Post about Typescript",
                     tags: [
                         { id: 1, title: "tag1" },
-                        { id: 2, title: "python" }
+                        { id: 2, title: "python" },
                     ],
                     published: true,
                     createdAt: new Date(),
@@ -103,5 +103,55 @@ describe("multiSearch", () => {
             }
         });
     });
-    //add test that handles for doubles
+
+    test("multiSearch excludes repeating same post (tag+keyword) matching", async () => {
+        const post1 = {
+            id: 1,
+            title: "Post about Typescript",
+            tags: [
+                { id: 1, title: "tag1" },
+                { id: 2, title: "someTag" }
+            ],
+            published: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }
+        const expectedResult = {
+            searchResult: {
+                posts: [
+                    post1,
+                ],
+            }
+        }
+
+        prismaMock.post.findMany.mockResolvedValue(expectedResult.searchResult.posts);
+
+        const result = await db.multiSearch({ keyword: "typescript", tagId: 1 });
+
+        expect(prismaMock.post.findMany).toHaveBeenCalledWith({
+            where: {
+                tags: {
+                    some: {
+                        id: 1,
+                    }
+                },
+                title: {
+                    contains: "typescript",
+                    mode: "insensitive",
+                },
+                published: true,
+            }
+        });
+
+        expect(prismaMock.tag.findMany).toHaveBeenCalledWith({
+            where: {
+                title: {
+                    contains: "typescript",
+                    mode: "insensitive",
+                }
+            }
+        });
+
+        expect(result).toEqual(expectedResult);
+    });
 });

@@ -39,7 +39,7 @@ describe(`getPostById`, () => {
 	}
 
 	beforeEach(() => {
-		vi.clearAllMocks();
+		vi.resetAllMocks();
 	});
 
 	test(`Should return post`, async () => {

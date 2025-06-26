@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import type { Post, Tag } from "@prisma/client";
 import logger from "../utils/logger";
 
@@ -180,51 +180,43 @@ export default class DatabaseService {
 			searchResult: { posts: Post[], tags: Tag[] } | null, errorCode?: string
 		}> {
 		try {
-			let posts: Post[] = [];
-			let tags: Tag[] = [];
+			const { keyword, tagId } = params;
 
-			if (params.keyword) {
-				const [tagsByKeyword, postsByKeyword] = await Promise.all([
-					await this.prisma.tag.findMany({
-						where: {
-							title: {
-								contains: params.keyword,
-								mode: "insensitive",
-							},
-						},
+			const posts = await this.prisma.post.findMany({
+				where: {
+					published: true,
+					...(keyword && {
+						title: {
+							contains: keyword,
+							mode: "insensitive",
+						}
 					}),
-					await this.prisma.post.findMany({
-						where: {
-							title: {
-								contains: params.keyword,
-								mode: "insensitive",
-							},
-							published: true,
-						},
-					})
-				]);
-				tags = tagsByKeyword;
-				posts.push(...postsByKeyword);
-			}
-
-			if (params.tagId) {
-				const postByTag = await this.prisma.post.findMany({
-					where: {
+					...(tagId && {
 						tags: {
 							some: {
-								id: params.tagId,
-							},
-						},
-						published: true,
-					},
-				});
-				posts.push(...postByTag);
+								id: tagId,
+							}
+						}
+					}),
+				}
+			});
+
+			if (!keyword) {
+				return { searchResult: { posts, tags: [] } }
 			}
 
+			const tags = await this.prisma.tag.findMany({
+				where: {
+					title: {
+						contains: keyword,
+						mode: "insensitive",
+					}
+				}
+			});
 
-			return {
-				searchResult: { posts, tags }
-			}
+			return { searchResult: { posts, tags } }
+
+
 		} catch (err) {
 			logger.error(
 				`Error using multiSearch for ${params.keyword} keyword and ${params.tagId} tagId :`, err
