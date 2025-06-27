@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import type { Post, Tag } from "@prisma/client";
 import logger from "../utils/logger";
 
@@ -6,6 +6,8 @@ export default class DatabaseService {
 	constructor(private prisma: PrismaClient = new PrismaClient()) {
 		this.prisma = prisma;
 	}
+
+	// Post methods
 
 	async getPostById(params: { postId: number; withContent: boolean }): Promise<
 		{ post?: Post | null; errorCode?: string } |
@@ -124,4 +126,104 @@ export default class DatabaseService {
 			return { post: null, errorCode: "critical_error" };
 		}
 	}
-};
+
+	// Tag methods
+
+	async insertTag(params: { title: string }): Promise<{ tag?: Tag | null; errorCode?: string }> {
+		try {
+			const tag = await this.prisma.tag.create({
+				data: {
+					title: params.title,
+				},
+				select: {
+					id: true,
+					title: true,
+				}
+			})
+			return { tag };
+		} catch (err) {
+			logger.error(`Error inserting tag with title ${params.title}:`, err);
+			return { tag: null, errorCode: "critical_error" };
+		}
+	}
+
+	async deleteTag(params: { tagId: number }): Promise<{ tag?: Tag | null, errorCode?: string }> {
+		try {
+			const tag = await this.prisma.tag.delete({
+				where: {
+					id: params.tagId,
+				},
+				select: {
+					id: true,
+					title: true,
+				}
+			});
+			return { tag };
+		} catch (err) {
+			logger.error(`Error deleting tag with ID ${params.tagId}:`, err);
+			return { tag: null, errorCode: "critical_error" };
+		}
+	}
+
+	/*search methods
+
+	//** This function is meant to search for : 
+		-Tag & Post via keyword
+		-Post via Tag
+
+		The concept is to make it able for user to enter keyword,
+		and allow to select tags, that may interest him
+	*/
+
+	async multiSearch(params: { keyword?: string, tagId?: number })
+		: Promise<{
+			searchResult: { posts: Post[], tags: Tag[] } | null, errorCode?: string
+		}> {
+		try {
+			const { keyword, tagId } = params;
+
+			const posts = await this.prisma.post.findMany({
+				where: {
+					published: true,
+					...(keyword && {
+						title: {
+							contains: keyword,
+							mode: "insensitive",
+						}
+					}),
+					...(tagId && {
+						tags: {
+							some: {
+								id: tagId,
+							}
+						}
+					}),
+				}
+			});
+
+			if (!keyword) {
+				return { searchResult: { posts, tags: [] } }
+			}
+
+			const tags = await this.prisma.tag.findMany({
+				where: {
+					title: {
+						contains: keyword,
+						mode: "insensitive",
+					}
+				}
+			});
+
+			return { searchResult: { posts, tags } }
+
+
+		} catch (err) {
+			logger.error(
+				`Error using multiSearch for ${params.keyword} keyword and ${params.tagId} tagId :`, err
+			);
+			return { searchResult: null, errorCode: "critical_error" };
+		}
+	}
+}
+
+//Add a functionality that excludes the doubles in multiSearch
