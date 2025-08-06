@@ -1,10 +1,14 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import type { Post, Tag } from "@prisma/client";
+
+import AuthService from "./auth.service";
 import logger from "../utils/logger";
+import bcrypt from "bcrypt";
 
 export default class DatabaseService {
-	constructor(private prisma: PrismaClient = new PrismaClient()) {
+	constructor(private prisma: PrismaClient = new PrismaClient(), private authService: AuthService = new AuthService()) {
 		this.prisma = prisma;
+		this.authService = authService;
 	}
 
 	// Post methods
@@ -139,7 +143,7 @@ export default class DatabaseService {
 					id: true,
 					title: true,
 				}
-			})
+			});
 			return { tag };
 		} catch (err) {
 			logger.error(`Error inserting tag with title ${params.title}:`, err);
@@ -224,6 +228,32 @@ export default class DatabaseService {
 			return { searchResult: null, errorCode: "critical_error" };
 		}
 	}
-}
 
-//Add a functionality that excludes the doubles in multiSearch
+	//User management -> for now only for admin staff
+
+	async registerUser(params: { login: string, password: string }) {
+		const { login } = params;
+
+		const hashedPassword = await bcrypt.hash(params.password, 10);
+
+		this.prisma.user.create({
+			data: {
+				login,
+				hashedPassword,
+				isAdmin: true, // Currently all users are admins for simplicity
+			}
+		})
+	}
+
+	async getUserByLogin(login: string) {
+		return this.prisma.user.findUnique({
+			where: { login },
+		});
+	}
+
+	async getUserById(userId: number) {
+		return this.prisma.user.findUnique({
+			where: { id: userId },
+		});
+	}
+}
