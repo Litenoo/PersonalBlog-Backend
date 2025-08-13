@@ -6,3 +6,12 @@ The src has 3 other folders.
 -Services, which is sub-services, that are later merged into the app in app.ts file
 -utils, which is basically tools like logger
 -http, which is basically a http service. It is not in the services folder, cause it is easier to manage it when it is independent from them
+
+-schemas/post.schema.ts
+    This file is meant to contain type assertions to make it easier to manage the data related to the post model
+
+-routes/dashboard.ts 
+    This file is meant to contain routes that are going to be protected by the JWT token authentication
+
+- tokenAuthentication.ts
+    This file is meant to contain the functions responsible for JWT authentication and management methods. It is not an independent service because it would be too small to do so

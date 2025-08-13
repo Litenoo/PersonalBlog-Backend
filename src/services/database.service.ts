@@ -1,14 +1,15 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import type { Post, Tag } from "@prisma/client";
 
-import AuthService from "./auth.service";
+
 import logger from "../utils/logger";
 import bcrypt from "bcrypt";
 
+import { authJWTToken, createJWTToken } from "../tokenAuthentication";
+
 export default class DatabaseService {
-	constructor(private prisma: PrismaClient = new PrismaClient(), private authService: AuthService = new AuthService()) {
+	constructor(private prisma: PrismaClient = new PrismaClient()) {
 		this.prisma = prisma;
-		this.authService = authService;
 	}
 
 	// Post methods
