@@ -2,7 +2,7 @@ import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { PrismaClient } from '@prisma/client/extension';
 import jwt from 'jsonwebtoken';
 
-import { createJWTToken, authJWTToken } from '../../src/tokenAuthentication';
+import { createJWTToken, authJWTToken } from '../../../src/tokenAuthentication';
 
 const DEFAULT_ENV = process.env;
 

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
-import DbService from '../../src/services/database.service';
+import DbService from '../../../src/services/database.service';
 import { PrismaClient } from '@prisma/client/extension';
 
 /**

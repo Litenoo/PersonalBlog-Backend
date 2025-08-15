@@ -22,7 +22,7 @@ export function createJWTToken(userId: number, username: string, isAdmin: boolea
         isAdmin,
         tokenId: randomUUID(),
     }
-    const token = jwt.sign(payload, secretKey, { expiresIn: "15m" })
+    const token = jwt.sign(payload, secretKey, { expiresIn: "15m" });
     return token;
 }
 

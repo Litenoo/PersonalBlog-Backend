@@ -5,8 +5,6 @@ import type { Post, Tag } from "@prisma/client";
 import logger from "../utils/logger";
 import bcrypt from "bcrypt";
 
-import { authJWTToken, createJWTToken } from "../tokenAuthentication";
-
 export default class DatabaseService {
 	constructor(private prisma: PrismaClient = new PrismaClient()) {
 		this.prisma = prisma;
@@ -237,14 +235,38 @@ export default class DatabaseService {
 
 		const hashedPassword = await bcrypt.hash(params.password, 10);
 
-		this.prisma.user.create({
+		const user = await this.prisma.user.create({
 			data: {
 				login,
 				hashedPassword,
 				isAdmin: true, // Currently all users are admins for simplicity
 			}
-		})
+		});
+
+		return { user }
 	}
+
+	// That is job for httpService that I will add later
+	// async loginUser(params: { login: string, password: string }) {
+	// 	try {
+	// 		const input_password_hash = await bcrypt.hash(params.password, 10);
+	// 		const user = await this.prisma.user.findUnique({
+	// 			where: {
+	// 				login: params.login,
+	// 			}
+	// 		});
+
+	// 		if (!user) {
+	// 			return null;
+	// 		}
+
+	// 		if (input_password_hash === user.hashedPassword) {
+
+	// 		}
+	// 	} catch (err) {
+	// 		logger.error(err);
+	// 	}
+	// }
 
 	async getUserByLogin(login: string) {
 		return this.prisma.user.findUnique({
@@ -258,3 +280,5 @@ export default class DatabaseService {
 		});
 	}
 }
+
+export const databaseService = new DatabaseService();
