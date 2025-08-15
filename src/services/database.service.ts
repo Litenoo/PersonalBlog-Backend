@@ -1,6 +1,9 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import type { Post, Tag } from "@prisma/client";
+
+
 import logger from "../utils/logger";
+import bcrypt from "bcrypt";
 
 export default class DatabaseService {
 	constructor(private prisma: PrismaClient = new PrismaClient()) {
@@ -139,7 +142,7 @@ export default class DatabaseService {
 					id: true,
 					title: true,
 				}
-			})
+			});
 			return { tag };
 		} catch (err) {
 			logger.error(`Error inserting tag with title ${params.title}:`, err);
@@ -224,6 +227,58 @@ export default class DatabaseService {
 			return { searchResult: null, errorCode: "critical_error" };
 		}
 	}
+
+	//User management -> for now only for admin staff
+
+	async registerUser(params: { login: string, password: string }) {
+		const { login } = params;
+
+		const hashedPassword = await bcrypt.hash(params.password, 10);
+
+		const user = await this.prisma.user.create({
+			data: {
+				login,
+				hashedPassword,
+				isAdmin: true, // Currently all users are admins for simplicity
+			}
+		});
+
+		return { user }
+	}
+
+	// That is job for httpService that I will add later
+	// async loginUser(params: { login: string, password: string }) {
+	// 	try {
+	// 		const input_password_hash = await bcrypt.hash(params.password, 10);
+	// 		const user = await this.prisma.user.findUnique({
+	// 			where: {
+	// 				login: params.login,
+	// 			}
+	// 		});
+
+	// 		if (!user) {
+	// 			return null;
+	// 		}
+
+	// 		if (input_password_hash === user.hashedPassword) {
+
+	// 		}
+	// 	} catch (err) {
+	// 		logger.error(err);
+	// 	}
+	// }
+
+	async getUserByLogin(login: string) {
+		return this.prisma.user.findUnique({
+			where: { login },
+		});
+	}
+
+	async getUserById(userId: number) {
+		return this.prisma.user.findUnique({
+			where: { id: userId },
+		});
+	}
 }
 
-//Add a functionality that excludes the doubles in multiSearch
+export const databaseService = new DatabaseService();
