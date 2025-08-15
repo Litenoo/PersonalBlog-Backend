@@ -10,4 +10,9 @@ router.get('/overview', (req, res) => {
     res.json({ message: 'Dashboard overview' });
 });
 
+router.get("/postsManagement", (req, res) => {
+    const posts = null;
+    res.json({ posts: posts });
+});
+
 export default router;

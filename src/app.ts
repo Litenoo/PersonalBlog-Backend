@@ -1,9 +1,12 @@
-export default class App {
-    constructor(port: number) {
-        this.listen(port);
-    }
+import DatabaseService, { databaseService } from "./services/database.service";
+import HttpService, { httpService } from "./services/http.service";
 
-    listen = (port: number): void => {
-        console.log(`Server is listening on port ${port}`);
+export default class App {
+    private dbService: DatabaseService;
+    private httpService: HttpService;
+
+    constructor(port: number) {
+        this.dbService = databaseService; // It is constructed in the service file for simplicity
+        this.httpService = httpService;
     }
 }
