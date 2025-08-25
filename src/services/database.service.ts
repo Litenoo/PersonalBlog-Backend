@@ -1,7 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import type { Post, Tag } from "@prisma/client";
 
-
 import logger from "../utils/logger";
 import bcrypt from "bcrypt";
 
@@ -282,3 +281,4 @@ export default class DatabaseService {
 }
 
 export const databaseService = new DatabaseService();
+logger.info('-> Database Service initialized');

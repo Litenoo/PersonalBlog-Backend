@@ -1,6 +1,6 @@
 # Services Folder
 
-The services folder has each sub_service declaration files inside. **Each of those exports a class**, that is already **initialized** inside each of the files to make access to it simpler, those initialized classes are mostly being imported inside the app.ts and merged into the final app.
+The services folder has each service declaration files inside. **Each of those exports a class**, that is already **initialized** inside each of the files to make access to it simpler, those initialized classes are mostly being imported inside the app.ts and merged into the final app.
 
 - database.service.ts :
     This service is responsible for communication with the database.

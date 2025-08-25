@@ -1,3 +1,3 @@
 import App from './app';
 
-const app = new App(3000);
+const app = new App(Number(process.env.PORT) || 3000);
