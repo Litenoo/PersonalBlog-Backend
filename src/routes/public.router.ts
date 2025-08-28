@@ -1,9 +1,13 @@
 import express from 'express';
 
-const router = express.Router();
+import DatabaseService from '../services/database.service';
 
-router.get('/', (req, res) => {
-    res.json({ message: 'Public routes accessible without authentication' });
-});
+export default function createPublicRouter(databaseService?: DatabaseService) {
+    const router = express.Router();
 
-export default router;
+    router.get('/', (req, res) => {
+        res.json({ message: 'Public routes accessible without authentication' });
+    });
+
+    return router;
+}

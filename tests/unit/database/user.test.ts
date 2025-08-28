@@ -1,6 +1,7 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import DbService from '../../../src/services/database.service';
 import { PrismaClient } from '@prisma/client/extension';
+import { Prisma } from "@prisma/client";
 
 import bcrypt from "bcrypt";
 
@@ -49,6 +50,30 @@ describe("registerUser", async () => {
             callArgs.data.hashedPassword,
         );
         expect(matchPasswords).toBe(true);
+    });
+
+    test("Should not register user with taken username", async () => {
+        const user1 = {
+            login: "user1",
+            hashedPassword: "someHashedPassword",
+            isAdmin: true,
+        }
+
+
+        const p2002Error = {
+            code: 'P2002',
+        } as unknown as Prisma.PrismaClientKnownRequestError;
+
+        prismaMock.user.create.mockRejectedValueOnce(p2002Error);
+
+        const result = await db.registerUser({
+            login: user1.login,
+            password: user1.hashedPassword,
+        });
+
+        expect(result).toEqual({ user: null, errorCode: "username_taken" });
+        expect(prismaMock.user.create).toHaveBeenCalled();
+
     });
 
     test("Should return the correct data about user", async () => {

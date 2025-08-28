@@ -232,17 +232,28 @@ export default class DatabaseService {
 	async registerUser(params: { login: string, password: string }) {
 		const { login } = params;
 
-		const hashedPassword = await bcrypt.hash(params.password, 10);
+		try {
+			const hashedPassword = await bcrypt.hash(params.password, 10);
 
-		const user = await this.prisma.user.create({
-			data: {
-				login,
-				hashedPassword,
-				isAdmin: true, // Currently all users are admins for simplicity
+			const user = await this.prisma.user.create({
+				data: {
+					login,
+					hashedPassword,
+					isAdmin: true, // Currently all users are admins for simplicity
+				}
+			});
+
+			return { user }
+		} catch (err) {
+			if (err) {
+				if ((err as any)?.code === 'P2002') {
+					logger.warn(`Attempt to register with taken username: ${login}`);
+					return { user: null, errorCode: "username_taken" };
+				}
 			}
-		});
-
-		return { user }
+			logger.error(`Error registering user with login ${login}:`, err);
+			return { user: null, errorCode: "critical_error" };
+		}
 	}
 
 	// That is job for httpService that I will add later
