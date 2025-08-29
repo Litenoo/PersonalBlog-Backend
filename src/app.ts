@@ -11,6 +11,7 @@ export default class App {
 
     constructor(port: number) {
         this.dbService = databaseService;
+
         this.httpService = httpService;
         this.httpService.start(port);
     }

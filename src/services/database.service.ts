@@ -144,6 +144,12 @@ export default class DatabaseService {
 			});
 			return { tag };
 		} catch (err) {
+			if (err) {
+				if ((err as any)?.code === 'P2002') {
+					logger.warn(`Attempt to insert duplicate tag with title: ${params.title}`);
+					return { tag: null, errorCode: "tag_exists" };
+				}
+			}
 			logger.error(`Error inserting tag with title ${params.title}:`, err);
 			return { tag: null, errorCode: "critical_error" };
 		}
@@ -217,8 +223,6 @@ export default class DatabaseService {
 			});
 
 			return { searchResult: { posts, tags } }
-
-
 		} catch (err) {
 			logger.error(
 				`Error using multiSearch for ${params.keyword} keyword and ${params.tagId} tagId :`, err
@@ -255,28 +259,6 @@ export default class DatabaseService {
 			return { user: null, errorCode: "critical_error" };
 		}
 	}
-
-	// That is job for httpService that I will add later
-	// async loginUser(params: { login: string, password: string }) {
-	// 	try {
-	// 		const input_password_hash = await bcrypt.hash(params.password, 10);
-	// 		const user = await this.prisma.user.findUnique({
-	// 			where: {
-	// 				login: params.login,
-	// 			}
-	// 		});
-
-	// 		if (!user) {
-	// 			return null;
-	// 		}
-
-	// 		if (input_password_hash === user.hashedPassword) {
-
-	// 		}
-	// 	} catch (err) {
-	// 		logger.error(err);
-	// 	}
-	// }
 
 	async getUserByLogin(login: string) {
 		return this.prisma.user.findUnique({

@@ -154,4 +154,33 @@ describe("multiSearch", () => {
 
         expect(result).toEqual(expectedResult);
     });
+
+    test("Should return all of the posts if no keyword provided", async () => {
+        const expectedResult = {
+            searchResult: {
+                posts: [{
+                    id: 1,
+                    title: "Post about Typescript",
+                    tags: [
+                        { id: 1, title: "tag1" },
+                        { id: 2, title: "python" },
+                    ],
+                    published: true,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                }],
+                tags: [],
+            }
+        }
+
+        prismaMock.post.findMany.mockResolvedValue(expectedResult.searchResult.posts);
+        const result = await db.multiSearch({});
+
+        expect(result).toEqual(expectedResult);
+        expect(prismaMock.post.findMany).toHaveBeenCalledWith({
+            where: {
+                published: true,
+            }
+        });
+    });
 });
